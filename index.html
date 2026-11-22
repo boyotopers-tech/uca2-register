@@ -2090,6 +2090,68 @@
       setInterval(update, 1000);
     }
 
+    const SUPABASE_URL = "https://mrtluhkeuduzgqjcbjfl.supabase.co";
+const SUPABASE_KEY = "sb_publis...";
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function refreshAllViews() {
+  if (typeof populateResidentPlateInput === "function") populateResidentPlateInput();
+  if (typeof renderRecentResidentLogs === "function") renderRecentResidentLogs();
+  if (typeof renderActiveVisitors === "function") renderActiveVisitors();
+  if (typeof renderActiveDeliveries === "function") renderActiveDeliveries();
+  if (typeof renderRecordsTable === "function") renderRecordsTable();
+  if (typeof renderResidentDatabase === "function") renderResidentDatabase();
+  if (typeof renderSettingsUsersList === "function") renderSettingsUsersList();
+}
+
+async function saveToSupabase(docId, dataObj) {
+  const { error } = await sbClient
+    .from("uca2_data")
+    .upsert({ id: docId, payload: dataObj }, { onConflict: "id" });
+  if (error) console.error("Ralat simpan Supabase:", error);
+}
+
+async function loadFromSupabase(docId) {
+  const { data, error } = await sbClient
+    .from("uca2_data")
+    .select("payload")
+    .eq("id", docId)
+    .maybeSingle();
+  if (error) {
+    console.error("Ralat baca Supabase:", error);
+    return null;
+  }
+  return data ? data.payload : null;
+}
+
+async function initCloudSync() {
+  const cloudState = await loadFromSupabase("main_state");
+  if (cloudState && typeof cloudState === "object") {
+    if (Array.isArray(cloudState.users) && typeof users !== "undefined") users = cloudState.users;
+    if (Array.isArray(cloudState.records) && typeof records !== "undefined") records = cloudState.records;
+    if (Array.isArray(cloudState.residents) && typeof residents !== "undefined") residents = cloudState.residents;
+    if (typeof cloudState.currentUser !== "undefined" && typeof currentUser !== "undefined") currentUser = cloudState.currentUser;
+  }
+  refreshAllViews();
+
+  sbClient
+    .channel("uca2-data-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "uca2_data" },
+      (msg) => {
+        const updatedRow = msg.new;
+        if (!updatedRow || updatedRow.id !== "main_state" || !updatedRow.payload) return;
+        const latest = updatedRow.payload;
+        if (Array.isArray(latest.users) && typeof users !== "undefined") users = latest.users;
+        if (Array.isArray(latest.records) && typeof records !== "undefined") records = latest.records;
+        if (Array.isArray(latest.residents) && typeof residents !== "undefined") residents = latest.residents;
+        refreshAllViews();
+      }
+    )
+    .subscribe();
+}
+
     window.onload = async function() {
       startLiveClock();
       await initCloudSync();
