@@ -2090,8 +2090,8 @@
       setInterval(update, 1000);
     }
 
-    const SUPABASE_URL = "https://mrtluhkeuduzgqjcbjfl.supabase.co";
-const SUPABASE_KEY = "sb_publis...";
+const SUPABASE_URL = "https://nrtlhkkaudazgqjdchjfl.supabase.co";
+const SUPABASE_KEY = "sb_publishable_...";
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function refreshAllViews() {
@@ -2130,7 +2130,9 @@ async function initCloudSync() {
     if (Array.isArray(cloudState.users) && typeof users !== "undefined") users = cloudState.users;
     if (Array.isArray(cloudState.records) && typeof records !== "undefined") records = cloudState.records;
     if (Array.isArray(cloudState.residents) && typeof residents !== "undefined") residents = cloudState.residents;
-    if (typeof cloudState.currentUser !== "undefined" && typeof currentUser !== "undefined") currentUser = cloudState.currentUser;
+    if (typeof cloudState.currentUser !== "undefined" && typeof currentUser !== "undefined") {
+      currentUser = cloudState.currentUser;
+    }
   }
   refreshAllViews();
 
@@ -2152,10 +2154,10 @@ async function initCloudSync() {
     .subscribe();
 }
 
-    window.onload = async function() {
-      startLiveClock();
-      await initCloudSync();
-    };
-  </script>
+window.onload = async function () {
+  startLiveClock();
+  await initCloudSync();
+};
+
 </body>
 </html>
